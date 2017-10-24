@@ -21,7 +21,7 @@ public class KafkaAvroConsumerExample {
                 .withBootstrapServers("kafka:9092")
                 .withTopic("postgres-customers")
                 .withKeyDeserializer(ByteArrayDeserializer.class)
-                .withValueDeserializer(EnvelopeKafkaAvroDeserializer.class)
+                .withValueDeserializer(CustomersKafkaAvroDeserializer.class)
 
                 .updateConsumerProperties(ImmutableMap.of("auto.offset.reset", (Object)"earliest"))
                 .updateConsumerProperties(ImmutableMap.of("schema.registry.url", (Object)"http://registry:8081"))

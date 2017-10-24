@@ -7,7 +7,7 @@ import org.apache.kafka.common.serialization.Deserializer;
 
 import java.util.Map;
 
-public class EnvelopeKafkaAvroDeserializer extends AbstractKafkaAvroDeserializer implements Deserializer<customers> {
+public class CustomersKafkaAvroDeserializer extends AbstractKafkaAvroDeserializer implements Deserializer<customers> {
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
         configure(new KafkaAvroDeserializerConfig(configs));
