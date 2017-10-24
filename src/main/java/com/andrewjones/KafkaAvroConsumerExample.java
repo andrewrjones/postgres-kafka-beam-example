@@ -2,14 +2,18 @@ package com.andrewjones;
 
 import com.andrewjones.avro.customers;
 import com.google.common.collect.ImmutableMap;
+import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.coders.AvroCoder;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.kafka.KafkaIO;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.*;
 import org.apache.beam.sdk.values.KV;
-import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.beam.sdk.values.PBegin;
+import org.apache.beam.sdk.values.PCollection;
+import org.apache.kafka.common.serialization.StringDeserializer;
 
 public class KafkaAvroConsumerExample {
     public static void main(String[] args) {
@@ -17,11 +21,11 @@ public class KafkaAvroConsumerExample {
         PipelineOptions options = PipelineOptionsFactory.create();
         Pipeline p = Pipeline.create(options);
 
-        p.apply(KafkaIO.<byte[], customers>read()
+        PTransform<PBegin, PCollection<KV<String, customers>>> kafka = KafkaIO.<String, customers>read()
                 .withBootstrapServers("kafka:9092")
                 .withTopic("postgres-customers")
-                .withKeyDeserializer(ByteArrayDeserializer.class)
-                .withValueDeserializer(CustomersKafkaAvroDeserializer.class)
+                .withKeyDeserializer(StringDeserializer.class)
+                .withValueDeserializerAndCoder((Class)KafkaAvroDeserializer.class, AvroCoder.of(customers.class))
 
                 .updateConsumerProperties(ImmutableMap.of("auto.offset.reset", (Object)"earliest"))
                 .updateConsumerProperties(ImmutableMap.of("schema.registry.url", (Object)"http://registry:8081"))
@@ -30,10 +34,11 @@ public class KafkaAvroConsumerExample {
                 // We're writing to a file, which does not support unbounded data sources. This line makes it bounded to
                 // the first 2 records.
                 // In reality, we would likely be writing to a data source that supports unbounded data, such as BigQuery.
-                .withMaxNumRecords(5)
+                .withMaxNumRecords(2)
 
-                .withoutMetadata()
-        )
+                .withoutMetadata();
+
+        p.apply(kafka)
                 .apply(Values.<customers>create())
                 .apply("ExtractWords", ParDo.of(new DoFn<customers, String>() {
                     @ProcessElement
